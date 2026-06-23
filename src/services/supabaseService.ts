@@ -110,33 +110,19 @@ export const softDeletePhoto = async (id: string): Promise<Photo> => {
 
 export const getProcessedRegistry = async (): Promise<string[]> => {
   try {
-    const { data, error } = await supabaseClient.storage
-      .from('photos')
-      .download('processed_registry.json')
-    
-    if (error) {
-      // If the file doesn't exist, return empty array
-      if (error.message?.includes('Object not found') || (error as any).status === 404) {
-        return []
-      }
-      throw error
-    }
-    const text = await data.text()
-    return JSON.parse(text)
+    const data = localStorage.getItem('trailtracker_skipped_photos')
+    return data ? JSON.parse(data) : []
   } catch (e) {
-    console.warn('Failed to fetch processed registry, returning empty:', e)
+    console.warn('Failed to fetch processed registry from localStorage, returning empty:', e)
     return []
   }
 }
 
 export const saveProcessedRegistry = async (keys: string[]): Promise<void> => {
-  const jsonStr = JSON.stringify(keys)
-  const blob = new Blob([jsonStr], { type: 'application/json' })
-  const file = new File([blob], 'processed_registry.json', { type: 'application/json' })
-  const { error } = await supabaseClient.storage
-    .from('photos')
-    .upload('processed_registry.json', file, {
-      upsert: true
-    })
-  if (error) throw error
+  try {
+    localStorage.setItem('trailtracker_skipped_photos', JSON.stringify(keys))
+  } catch (e) {
+    console.error('Failed to save processed registry to localStorage:', e)
+    throw e
+  }
 }

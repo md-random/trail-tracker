@@ -41,7 +41,7 @@ const uploadProgressMessage = ref('')
 const uploadPercentage = ref(0)
 
 // Shared photo processing state
-const { processFiles, processedCount, totalCount, progressPercentage, progressMessage } = usePhotoProcessing()
+const { processFiles, enhanceImageFile, processedCount, totalCount, progressPercentage, progressMessage } = usePhotoProcessing()
 
 export const useIntakeWorkflow = () => {
   watch(
@@ -82,7 +82,10 @@ export const useIntakeWorkflow = () => {
   }
 
   // ─── Actions ───
-  const startProcessing = async (files: File[], ignoreRegistry?: boolean): Promise<void> => {
+  const startProcessing = async (
+    files: File[],
+    ignoreRegistry?: boolean
+  ): Promise<void> => {
     state.value = 'processing'
     
     progressMessage.value = 'Loading skipped photos registry...'
@@ -147,6 +150,7 @@ export const useIntakeWorkflow = () => {
                 isCluster: false,
                 filename: c.file.name,
                 file: c.file,
+                originalSize: c.originalSize,
                 previewUrl: c.previewUrl,
                 thumbnailUrl: c.previewUrl,
                 latitude: c.latitude,
@@ -202,6 +206,7 @@ export const useIntakeWorkflow = () => {
               isCluster: false,
               filename: photo.file.name,
               file: photo.file,
+              originalSize: photo.originalSize,
               previewUrl: photo.previewUrl,
               thumbnailUrl: photo.previewUrl,
               latitude: photo.latitude || analysis.latitude || null,
@@ -228,6 +233,7 @@ export const useIntakeWorkflow = () => {
               isCluster: false,
               filename: photo.file.name,
               file: photo.file,
+              originalSize: photo.originalSize,
               previewUrl: photo.previewUrl,
               thumbnailUrl: photo.previewUrl,
               latitude: photo.latitude || null,
@@ -310,7 +316,9 @@ export const useIntakeWorkflow = () => {
           const keepers = item.keeperIndices || [item.keeperIndex || 0]
           item.photos.forEach((photo, idx) => {
             if (!keepers.includes(idx)) {
-              registrySet.add(`${photo.file.name}_${photo.taken_at}`)
+              const key = `${photo.file.name}_${photo.originalSize}`
+              registrySet.add(key)
+              console.log(`[Registry Sync] Adding non-keeper duplicate: ${key}`)
             }
           })
         }
@@ -321,12 +329,17 @@ export const useIntakeWorkflow = () => {
         if (item.skipped) {
           if (item.isCluster && item.photos) {
             item.photos.forEach(photo => {
-              registrySet.add(`${photo.file.name}_${photo.taken_at}`)
+              const key = `${photo.file.name}_${photo.originalSize}`
+              registrySet.add(key)
+              console.log(`[Registry Sync] Adding skipped cluster photo: ${key}`)
             })
           } else {
             const filename = item.filename || item.file?.name
-            if (filename) {
-              registrySet.add(`${filename}_${item.taken_at}`)
+            const size = item.originalSize
+            if (filename && size) {
+              const key = `${filename}_${size}`
+              registrySet.add(key)
+              console.log(`[Registry Sync] Adding skipped photo: ${key}`)
             }
           }
         }
@@ -334,7 +347,7 @@ export const useIntakeWorkflow = () => {
 
       if (registrySet.size > currentRegistry.length) {
         await supabase.saveProcessedRegistry(Array.from(registrySet))
-        console.log(`[Registry Sync] Saved ${registrySet.size} keys to storage.`)
+        console.log(`[Registry Sync] Saved ${registrySet.size} keys to local storage.`)
       }
     } catch (e) {
       console.error('Failed to sync skipped registry:', e)
@@ -371,12 +384,18 @@ export const useIntakeWorkflow = () => {
           uploadPercentage.value = Math.round((uploadedPhotosCount / totalPhotosToUpload) * 100)
 
           try {
+            let fileToUpload = photo.file
+            if (item.magicEnhance) {
+              uploadProgressMessage.value = `Enhancing ${photo.file.name}...`
+              fileToUpload = await enhanceImageFile(photo.file)
+            }
+
             const photoMetadata = {
               ...item,
-              filename: photo.file.name,
+              filename: fileToUpload.name,
               taken_at: photo.taken_at
             }
-            await supabase.uploadPhoto(photoMetadata, photo.file)
+            await supabase.uploadPhoto(photoMetadata, fileToUpload)
             uploadedPhotosCount++
             uploadedIds.add(item.id)
           } catch (e) {
@@ -391,7 +410,13 @@ export const useIntakeWorkflow = () => {
         uploadPercentage.value = Math.round((uploadedPhotosCount / totalPhotosToUpload) * 100)
 
         try {
-          await supabase.uploadPhoto(item, compressedFile)
+          let fileToUpload = compressedFile
+          if (item.magicEnhance) {
+            uploadProgressMessage.value = `Enhancing ${compressedFile.name}...`
+            fileToUpload = await enhanceImageFile(compressedFile)
+          }
+
+          await supabase.uploadPhoto(item, fileToUpload)
           uploadedPhotosCount++
           uploadedIds.add(item.id)
         } catch (e) {

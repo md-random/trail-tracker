@@ -67,7 +67,7 @@ export const usePhotoStore = defineStore('photos', () => {
 
   const removePhoto = async (id: string): Promise<void> => {
     try {
-      await supabase.deletePhoto(id)
+      await supabase.softDeletePhoto(id)
       photos.value = photos.value.filter(p => p.id !== id)
       if (selectedPhoto.value?.id === id) {
         selectedPhoto.value = null

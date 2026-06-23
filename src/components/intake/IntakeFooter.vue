@@ -28,10 +28,10 @@
       <button class="btn-secondary" @click="emit('cancel')">Cancel Intake</button>
       <button
         class="btn-primary"
-        :disabled="approvedCount === 0"
+        :disabled="approvedCount === 0 && skippedCount === 0"
         @click="emit('upload')"
       >
-        Upload {{ approvedCount }} Photos
+        {{ approvedCount > 0 ? `Upload ${approvedCount} Photos` : 'Save Discards & Exit' }}
       </button>
     </div>
   </div>

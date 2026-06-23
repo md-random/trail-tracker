@@ -38,11 +38,13 @@
           <button class="btn-primary" @click.stop="triggerFileSelect">Browse Files</button>
           <button class="btn-primary" @click.stop="triggerFolderSelect">Browse Folder</button>
         </div>
-        <div class="bypass-option">
-          <label class="bypass-label">
-            <input type="checkbox" v-model="ignoreRegistry" @click.stop />
-            Bypass previously skipped registry (Force import all)
-          </label>
+        <div class="intake-options">
+          <div class="option-item">
+            <label class="option-label">
+              <input type="checkbox" v-model="ignoreRegistry" @click.stop />
+              Bypass previously skipped registry (Force import all)
+            </label>
+          </div>
         </div>
         <div class="drop-hints">
           <span class="badge-tag">JPEG</span>
@@ -213,8 +215,14 @@ const triggerFolderSelect = (): void => {
   margin-top: 1rem;
 }
 
-.bypass-option {
+.intake-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+.option-item {
   background: rgba(255, 255, 255, 0.03);
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -225,12 +233,12 @@ const triggerFolderSelect = (): void => {
   transition: all 0.2s;
 }
 
-.bypass-option:hover {
+.option-item:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-.bypass-label {
+.option-label {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
@@ -240,7 +248,7 @@ const triggerFolderSelect = (): void => {
   user-select: none;
 }
 
-.bypass-label input[type="checkbox"] {
+.option-label input[type="checkbox"] {
   accent-color: hsl(var(--primary-color));
   cursor: pointer;
   width: 16px;

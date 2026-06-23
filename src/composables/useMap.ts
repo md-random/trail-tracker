@@ -2,6 +2,47 @@ import { shallowRef, watch, nextTick, type Ref } from 'vue'
 import L from 'leaflet'
 import type { Photo, UseMapOptions } from '@/types'
 
+const applyJitter = (photoList: Photo[], zoom: number): Photo[] => {
+  if (zoom < 15) return photoList
+
+  // Group photos by exact coordinates
+  const groups = new Map<string, Photo[]>()
+  photoList.forEach(photo => {
+    if (photo.latitude == null || photo.longitude == null) return
+    const key = `${photo.latitude.toFixed(6)}_${photo.longitude.toFixed(6)}`
+    if (!groups.has(key)) {
+      groups.set(key, [])
+    }
+    groups.get(key)!.push(photo)
+  })
+
+  const result: Photo[] = []
+  photoList.forEach(photo => {
+    if (photo.latitude == null || photo.longitude == null) return
+    const key = `${photo.latitude.toFixed(6)}_${photo.longitude.toFixed(6)}`
+    const group = groups.get(key)!
+    if (group.length <= 1) {
+      result.push(photo)
+    } else {
+      const idx = group.indexOf(photo)
+      const angle = (2 * Math.PI * idx) / group.length
+      // Constant screen pixel distance: 24 pixels scaled by zoom factor
+      const radius = 24 / Math.pow(2, zoom)
+
+      result.push({
+        ...photo,
+        latitude: photo.latitude + radius * Math.cos(angle),
+        longitude: photo.longitude + radius * Math.sin(angle)
+      })
+    }
+  })
+
+  return [
+    ...result,
+    ...photoList.filter(p => p.latitude == null || p.longitude == null)
+  ]
+}
+
 interface ClusterResult {
   latitude: number
   longitude: number
@@ -60,7 +101,10 @@ export const useMap = (
     markers.value.forEach(m => map.value!.removeLayer(m))
     markers.value = []
 
-    const clusteredPoints = computeClusters(photos.value)
+    const zoom = map.value.getZoom()
+    const jitteredPhotos = applyJitter(photos.value, zoom)
+
+    const clusteredPoints = computeClusters(jitteredPhotos)
 
     clusteredPoints.forEach(cluster => {
       if (cluster.count > 1) {
@@ -164,7 +208,7 @@ export const useMap = (
     map.value = L.map(containerId, {
       center,
       zoom,
-      layers: [positronLayer]
+      layers: [streetLayer]
     })
 
     const hikingTrailsLayer = L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png', {
@@ -176,11 +220,11 @@ export const useMap = (
     const topoWithTrails = L.layerGroup([topoLayer, hikingTrailsLayer])
 
     const baseMaps: Record<string, L.TileLayer | L.LayerGroup> = {
+      '🛣️ Streets': streetLayer,
       '☀️ Carto Positron': positronLayer,
       '🏔️ Topographic': topoLayer,
       '🌑 Dark Matter': darkLayer,
       '📡 Satellite': satelliteLayer,
-      '🛣️ Streets': streetLayer,
       '🥾 Waymarked Trails': topoWithTrails
     }
 

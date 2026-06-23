@@ -14,20 +14,67 @@
           :class="['toggle-btn', { active: currentView === 'dashboard' && activeTab === 'map' }]"
           @click="handleNav('map')"
         >
-          🗺️ Map View
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="14" 
+            height="14" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="2.2" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"
+            class="toggle-btn-icon"
+          >
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+            <line x1="9" y1="3" x2="9" y2="18"></line>
+            <line x1="15" y1="6" x2="15" y2="21"></line>
+          </svg>
+          <span>Map View</span>
         </button>
         <button
           :class="['toggle-btn', { active: currentView === 'dashboard' && activeTab === 'album' }]"
           @click="handleNav('album')"
         >
-          🖼️ Album View
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="14" 
+            height="14" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="2.2" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"
+            class="toggle-btn-icon"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <span>Album View</span>
         </button>
         <button
           v-if="intakeWorkflow.state.value !== 'idle'"
           :class="['toggle-btn', { active: currentView === 'intake' }]"
           @click="handleNav('intake')"
         >
-          📥 Intake Queue ({{ intakeWorkflow.remainingCount.value }} remaining)
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="14" 
+            height="14" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="2.2" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"
+            class="toggle-btn-icon"
+          >
+            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+            <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+          </svg>
+          <span>Intake Queue ({{ intakeWorkflow.remainingCount.value }} remaining)</span>
         </button>
       </div>
     </div>
@@ -151,6 +198,9 @@ const handleAdminClick = async (): Promise<void> => {
   cursor: pointer;
   border-radius: 7px !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 
 .toggle-btn.active {

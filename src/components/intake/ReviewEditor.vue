@@ -2,7 +2,11 @@
   <div class="editor-container">
     <div class="editor-main">
       <div class="preview-section">
-        <img :src="getActivePreview()" class="hero-preview" />
+        <img 
+          :src="getActivePreview()" 
+          class="hero-preview" 
+          :style="{ filter: item.magicEnhance ? 'brightness(1.02) contrast(1.05) saturate(1.18)' : 'none' }" 
+        />
         <div v-if="item.isCluster" class="cluster-banner">
           Duplicate Burst Detected
         </div>
@@ -88,6 +92,12 @@
     </div>
 
     <div class="editor-actions">
+      <div class="enhance-toggle">
+        <label class="enhance-label">
+          <input type="checkbox" v-model="item.magicEnhance" />
+          <span>🪄 Magic Enhance Photo</span>
+        </label>
+      </div>
       <button class="btn-danger btn-large" @click="emit('skip', item)">⏭️ Skip Image</button>
       <button v-if="!item.approved" class="btn-primary btn-large" @click="emit('approve', item)">✅ Approve &amp; Queue</button>
       <button v-else class="btn-secondary btn-large" @click="emit('unapprove', item)">↩️ Remove from Queue</button>
@@ -529,5 +539,41 @@ onUnmounted(() => {
   flex: 1;
   padding: 1rem;
   font-size: 1rem;
+}
+
+.enhance-toggle {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+  padding-right: 1.5rem;
+}
+
+.enhance-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.enhance-label:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.enhance-label input[type="checkbox"] {
+  accent-color: hsl(var(--primary-color));
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 </style>

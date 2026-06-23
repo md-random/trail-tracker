@@ -48,6 +48,7 @@ export interface ProcessedFile {
   latitude: number | null
   longitude: number | null
   previewUrl: string
+  originalSize: number
 }
 
 export interface IntakeItem {
@@ -55,6 +56,7 @@ export interface IntakeItem {
   isCluster: boolean
   filename?: string
   file?: File
+  originalSize?: number
   photos?: ProcessedFile[]
   keeperIndex?: number
   keeperIndices?: number[]
@@ -72,6 +74,7 @@ export interface IntakeItem {
   reasoning: string
   skipped: boolean
   approved: boolean
+  magicEnhance?: boolean
 }
 
 export type IntakeState = 'idle' | 'processing' | 'review' | 'uploading'

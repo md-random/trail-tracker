@@ -49,6 +49,7 @@ onMounted(() => {
 
 watch(() => store.photoToFlyTo, (photo) => {
   if (photo) {
+    store.activeCategory = 'all'
     activeTab.value = 'map'
   }
 })
