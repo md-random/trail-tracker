@@ -41,7 +41,7 @@ const uploadProgressMessage = ref('')
 const uploadPercentage = ref(0)
 
 // Shared photo processing state
-const { processFiles, enhanceImageFile, processedCount, totalCount, progressPercentage, progressMessage } = usePhotoProcessing()
+const { processFiles, compressImage, enhanceImageFile, processedCount, totalCount, progressPercentage, progressMessage } = usePhotoProcessing()
 
 export const useIntakeWorkflow = () => {
   watch(
@@ -206,6 +206,7 @@ export const useIntakeWorkflow = () => {
               isCluster: false,
               filename: photo.file.name,
               file: photo.file,
+              originalFile: photo.originalFile,
               originalSize: photo.originalSize,
               previewUrl: photo.previewUrl,
               thumbnailUrl: photo.previewUrl,
@@ -384,10 +385,14 @@ export const useIntakeWorkflow = () => {
           uploadPercentage.value = Math.round((uploadedPhotosCount / totalPhotosToUpload) * 100)
 
           try {
-            let fileToUpload = photo.file
+            const sourceFile = photo.originalFile || photo.file
+            let fileToUpload
             if (item.magicEnhance) {
               uploadProgressMessage.value = `Enhancing ${photo.file.name}...`
-              fileToUpload = await enhanceImageFile(photo.file)
+              fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, true)
+            } else {
+              uploadProgressMessage.value = `Processing ${photo.file.name}...`
+              fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, false)
             }
 
             const photoMetadata = {
@@ -403,24 +408,27 @@ export const useIntakeWorkflow = () => {
           }
         }
       } else {
-        const compressedFile = item.file
-        if (!compressedFile) continue
+        const sourceFile = item.originalFile || item.file
+        if (!sourceFile) continue
 
-        uploadProgressMessage.value = `Uploading ${compressedFile.name}...`
+        uploadProgressMessage.value = `Uploading ${sourceFile.name}...`
         uploadPercentage.value = Math.round((uploadedPhotosCount / totalPhotosToUpload) * 100)
 
         try {
-          let fileToUpload = compressedFile
+          let fileToUpload
           if (item.magicEnhance) {
-            uploadProgressMessage.value = `Enhancing ${compressedFile.name}...`
-            fileToUpload = await enhanceImageFile(compressedFile)
+            uploadProgressMessage.value = `Enhancing ${sourceFile.name}...`
+            fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, true)
+          } else {
+            uploadProgressMessage.value = `Processing ${sourceFile.name}...`
+            fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, false)
           }
 
           await supabase.uploadPhoto(item, fileToUpload)
           uploadedPhotosCount++
           uploadedIds.add(item.id)
         } catch (e) {
-          console.error(`Upload failed for ${compressedFile.name}:`, e)
+          console.error(`Upload failed for ${sourceFile.name}:`, e)
         }
       }
 

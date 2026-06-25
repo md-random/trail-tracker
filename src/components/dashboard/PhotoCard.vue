@@ -1,7 +1,7 @@
 <template>
   <div class="photo-card glass hover-scale">
     <div class="card-img-wrapper">
-      <img :src="photo.storage_path" class="card-img" />
+      <img :src="photo.storage_path + '?cb=' + store.cacheBuster" class="card-img" />
       <div class="card-badges">
         <span v-for="tag in photo.tags.slice(0, 2)" :key="tag" :class="['badge-tag', tag]">
           {{ tag }}

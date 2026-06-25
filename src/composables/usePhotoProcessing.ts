@@ -135,9 +135,9 @@ export const usePhotoProcessing = () => {
               const sharpenedData = ctx.createImageData(width, height)
               const sData = sharpenedData.data
               const weights = [
-                 0,   -0.4,   0,
-                -0.4,  2.6,  -0.4,
-                 0,   -0.4,   0
+                 0,   -0.1,   0,
+                -0.1,  1.4,  -0.1,
+                 0,   -0.1,   0
               ]
               const side = 3
               const halfSide = 1
@@ -251,6 +251,7 @@ export const usePhotoProcessing = () => {
 
       fileDataList.push({
         file: compressedFile,
+        originalFile: file,
         taken_at: exif.taken_at,
         latitude: exif.latitude,
         longitude: exif.longitude,
@@ -355,9 +356,9 @@ export const usePhotoProcessing = () => {
             const sharpenedData = ctx.createImageData(width, height)
             const sData = sharpenedData.data
             const weights = [
-               0,   -0.4,   0,
-              -0.4,  2.6,  -0.4,
-               0,   -0.4,   0
+               0,   -0.1,   0,
+              -0.1,  1.4,  -0.1,
+               0,   -0.1,   0
             ]
             const side = 3
             const halfSide = 1

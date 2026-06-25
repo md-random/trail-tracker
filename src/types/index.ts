@@ -44,6 +44,7 @@ export interface ExifData {
 
 export interface ProcessedFile {
   file: File
+  originalFile?: File
   taken_at: string
   latitude: number | null
   longitude: number | null
@@ -56,6 +57,7 @@ export interface IntakeItem {
   isCluster: boolean
   filename?: string
   file?: File
+  originalFile?: File
   originalSize?: number
   photos?: ProcessedFile[]
   keeperIndex?: number

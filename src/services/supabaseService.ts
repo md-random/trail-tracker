@@ -96,16 +96,13 @@ export const updatePhoto = async (id: string, updates: Partial<Photo>): Promise<
 }
 
 
-export const softDeletePhoto = async (id: string): Promise<Photo> => {
-  const { data, error } = await supabaseClient
+export const softDeletePhoto = async (id: string): Promise<void> => {
+  const { error } = await supabaseClient
     .from('photos')
     .update({ is_deleted: true })
     .eq('id', id)
-    .select()
 
   if (error) throw error
-  if (!data || data.length === 0) throw new Error('Photo not found')
-  return data[0] as Photo
 }
 
 export const getProcessedRegistry = async (): Promise<string[]> => {

@@ -7,7 +7,12 @@
       </div>
 
       <div class="panel-hero">
-        <img :src="selectedPhoto.storage_path" :alt="selectedPhoto.landmark || 'Photo'" />
+        <img 
+          :src="selectedPhoto.storage_path + '?cb=' + store.cacheBuster" 
+          :alt="selectedPhoto.landmark || 'Photo'" 
+          @click="showLightbox = true" 
+          title="Click to zoom image"
+        />
       </div>
 
       <div v-if="!isEditing" class="panel-meta">
@@ -77,10 +82,28 @@
       </div>
     </div>
   </transition>
+
+  <!-- Lightbox / Shadowbox Modal -->
+  <Teleport to="body">
+    <transition name="lightbox">
+      <div v-if="showLightbox" class="lightbox-backdrop" @click="showLightbox = false">
+        <button class="lightbox-close" @click.stop="showLightbox = false">✕</button>
+        <div class="lightbox-content" @click.stop>
+          <img :src="selectedPhoto.storage_path + '?cb=' + store.cacheBuster" :alt="selectedPhoto.landmark || 'Photo'" class="lightbox-image" />
+          <div v-if="selectedPhoto.landmark" class="lightbox-caption">
+            <h4>{{ selectedPhoto.landmark }}</h4>
+            <p v-if="selectedPhoto.city || selectedPhoto.state">
+              📍 {{ selectedPhoto.city ? `${selectedPhoto.city}, ` : '' }}{{ selectedPhoto.state }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { usePhotoStore } from '@/stores/photoStore'
 import { storeToRefs } from 'pinia'
 import type { EditForm, Photo } from '@/types'
@@ -88,6 +111,7 @@ import type { EditForm, Photo } from '@/types'
 const store = usePhotoStore()
 const { selectedPhoto, isAdmin, isEditing } = storeToRefs(store)
 
+const showLightbox = ref(false)
 const editForm = ref<EditForm>({
   landmark: '',
   city: '',
@@ -96,6 +120,24 @@ const editForm = ref<EditForm>({
   tagsString: '',
   latitude: null,
   longitude: null
+})
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && showLightbox.value) {
+    showLightbox.value = false
+  }
+}
+
+watch(showLightbox, (isOpen) => {
+  if (isOpen) {
+    window.addEventListener('keydown', handleKeyDown)
+  } else {
+    window.removeEventListener('keydown', handleKeyDown)
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 watch(selectedPhoto, (photo: Photo | null) => {
@@ -109,6 +151,8 @@ watch(selectedPhoto, (photo: Photo | null) => {
       latitude: photo.latitude,
       longitude: photo.longitude
     }
+  } else {
+    showLightbox.value = false
   }
   isEditing.value = false
 })
@@ -200,6 +244,12 @@ const handleDelete = async (): Promise<void> => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  cursor: zoom-in;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panel-hero img:hover {
+  transform: scale(1.03);
 }
 
 .panel-meta {
@@ -254,6 +304,11 @@ const handleDelete = async (): Promise<void> => {
   border-top: 0.5px solid rgba(255, 255, 255, 0.08);
 }
 
+.admin-actions button {
+  flex: 1;
+  justify-content: center;
+}
+
 .panel-edit {
   padding: 1.25rem;
   display: flex;
@@ -298,6 +353,11 @@ const handleDelete = async (): Promise<void> => {
   margin-top: 0.5rem;
 }
 
+.edit-actions button {
+  flex: 1;
+  justify-content: center;
+}
+
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -306,5 +366,134 @@ const handleDelete = async (): Promise<void> => {
 .slide-enter-from,
 .slide-leave-to {
   transform: translateX(100%);
+}
+
+/* Lightbox Shadowbox Backdrop */
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 4, 6, 0.9) !important;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+
+/* Close button inside Lightbox */
+.lightbox-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10000;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: rotate(90deg) scale(1.05);
+}
+
+/* Lightbox Content Layout */
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+}
+
+/* Lightbox Image styling */
+.lightbox-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: #000;
+}
+
+/* Floating Caption Pill */
+.lightbox-caption {
+  margin-top: 1.25rem;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 80%;
+  animation: slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lightbox-caption h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lightbox-caption p {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Animations */
+.lightbox-enter-active,
+.lightbox-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.lightbox-enter-from,
+.lightbox-leave-to {
+  opacity: 0;
+}
+
+.lightbox-enter-active .lightbox-content {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lightbox-leave-active .lightbox-content {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.lightbox-enter-from .lightbox-content {
+  transform: scale(0.9) translateY(20px);
+}
+
+.lightbox-leave-to .lightbox-content {
+  transform: scale(0.95) translateY(10px);
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

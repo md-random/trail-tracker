@@ -272,6 +272,32 @@ body {
   background: rgba(255, 255, 255, 0.15) !important;
 }
 
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 0.5px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: 9px !important;
+  padding: 8px 16px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #f87171 !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.35) !important;
+  color: #fff !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+}
+
+
 .custom-single-marker {
   display: flex;
   align-items: center;

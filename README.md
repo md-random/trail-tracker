@@ -40,29 +40,34 @@ graph TD
 *   **EXIF Parsing**: Extracts embedded GPS coordinates and timestamps directly in the browser via `ExifReader`.
 *   **Clustering & Keeper Selection**: Groups duplicate photo bursts (taken within 2 minutes of each other) into clusters and calls Gemini to choose the single best "keeper" photo, filtering out sub-optimal or duplicate images.
 *   **Queue Appending**: Dropping new image folders while the app is open automatically appends the files to the active queue instead of overwriting it, enabling progressive sorting.
-*   **Skipped Items Tab**: Automatically sorts non-adventure files (e.g., indoor spaces, screenshots, parking lots) into a "Skipped" tab with AI-provided rejection reasoning.
+*   **Skipped Items Tab**: Automatically sorts non-adventure files (e.g., indoor spaces, screenshots, parking lots) into a "Skipped" tab with AI-provided reasoning.
+*   **🔧 Retroactive Photo Repair Tool**: A specialized drag-and-drop/browse interface that matches original high-resolution photos on your computer to existing database rows using the original filenames. It compresses them and overwrites the blurry files in Supabase Storage at **$0.00 Gemini API cost**, preserving all your custom metadata.
 
 ---
 
 ## 🏗️ Core Engineering Challenges & Solutions
 
-### 1. Client-Side Memory Optimization (95% RAM Reduction)
-*   **Challenge**: Importing hundreds of raw camera photos (8MB–20MB each) caused browser tab crashes due to excessive memory consumption from holding original high-res image buffers in the DOM.
-*   **Solution**: Integrated a canvas-based scaling pipeline. Files are read immediately on select and downsampled to `1024x1024` with a `0.7` quality factor, reducing memory consumption by over **95%** (bringing RAM footprint from ~2GB to ~35MB) and resolving memory crashes.
+### 1. Client-Side Memory & Image Quality Optimization
+*   **Challenge**: Importing hundreds of raw camera photos (8MB–20MB each) caused browser tab crashes. Compressing them immediately to `1024px` at `70%` quality solved the RAM issue but made images look pixelated in the fullscreen lightbox. Furthermore, applying sharpening filters to already-compressed images caused double-compression and created a harsh, metallic "crosshatch" wire-mesh look.
+*   **Solution**: Re-architected the pipeline into a **dual-resolution system**. During intake, the UI uses lightweight `1024px` previews, keeping RAM footprint under **35MB**. However, the system retains a lightweight `originalFile` pointer in memory (0MB RAM impact). At the moment of upload, the original file is processed and compressed in a single pass to **`2048px`** at **`85%` quality** with a **75% softer sharpening filter** (reducing center weight from `2.6` to `1.4`), resulting in pristine, natural-looking images on Retina and 4K displays.
 
-### 2. State-Aware Session Recovery & Cost Control
+### 2. CDN Caching & Real-Time Image Overwrites
+*   **Challenge**: When the Repair Tool overwrites a blurry photo in Supabase Storage, the image URL remains identical. Because Supabase buckets are fronted by a Cloudflare CDN, the old `768x1024` image remains cached at the CDN level. Doing a hard refresh only clears local browser cache, leaving the blurry image on screen.
+*   **Solution**: Implemented an app-wide reactive `cacheBuster` timestamp in the Pinia store. The moment a repair finishes, the store triggers the cache buster, and all active image components (`PhotoCard.vue`, `PhotoDetailPanel.vue`) immediately append a query parameter (`?cb=[timestamp]`) to their image sources. This forces Cloudflare to bypass the CDN cache and instantly load the new high-resolution image on the user's screen.
+
+### 3. State-Aware Session Recovery & Cost Control
 *   **Challenge**: Page refreshes or accidental interruptions cleared intake progress, forcing users to re-upload and pay double API fees for re-analyzing the same pictures.
 *   **Solution**: Implemented a local persistence cache (`intake_analysis_cache` in `localStorage`) keyed by a sorted composite hash of filenames and timestamps. Before dispatching request blocks to Gemini, the pipeline checks the cache, instantly restoring completed analyses and conserving AI token cost.
 
-### 3. Database-Level Duplicate Filtering
+### 4. Database-Level Duplicate Filtering
 *   **Challenge**: Redundant uploads of identical files already present in the database wasted storage space and AI credits.
 *   **Solution**: Implemented a database duplicate filter that compares incoming files against the library prior to ingestion. If a filename and EXIF timestamp match an existing record, the image is skipped upfront.
 
-### 4. Leaflet Size Invalidation & UI Rendering
+### 5. Leaflet Size Invalidation & UI Rendering
 *   **Challenge**: Switching to the map tab after initializing it while hidden resulted in broken/warped tile alignments due to Leaflet caching a container size of `0x0`.
 *   **Solution**: Configured tab-state bindings to call `map.invalidateSize()` after a `nextTick` transition whenever the map tab is selected, correcting layout renders instantly.
 
-### 5. Custom Map UI & Cluster Rendering Fixes
+### 6. Custom Map UI & Cluster Rendering Fixes
 *   **Challenge**: Adding search functionality caused UI control overlaps, and grouped photo clusters rendered invisibly on the map due to styling conflicts.
 *   **Solution**: Re-architected Leaflet's control positions to cleanly align the Search, Zoom, and Layer tools. Implemented specific `.custom-cluster-marker` CSS logic to restore visibility to clustered coordinate groups at broad zoom levels.
 

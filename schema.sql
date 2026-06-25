@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS photos (
 -- Enable Row Level Security
 ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access to all non-deleted photos
-CREATE POLICY "Allow public read access" ON photos
-    FOR SELECT USING (is_deleted = FALSE);
+-- Allow select access: public can see non-deleted, authenticated can see all
+CREATE POLICY "Allow select access" ON photos
+    FOR SELECT USING (is_deleted = FALSE OR auth.role() = 'authenticated');
 
 -- Allow authenticated/admin inserts
 CREATE POLICY "Allow authenticated inserts" ON photos
-    FOR INSERT WITH CHECK (true);
+    FOR INSERT TO authenticated WITH CHECK (true);
 
--- Allow authenticated/admin updates
+-- Allow authenticated/admin updates (including soft deletes)
 CREATE POLICY "Allow authenticated updates" ON photos
-    FOR UPDATE USING (true);
+    FOR UPDATE TO authenticated USING (true) WITH CHECK (true);

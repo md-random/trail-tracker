@@ -11,6 +11,7 @@ export const usePhotoStore = defineStore('photos', () => {
   const selectedPhoto = ref<Photo | null>(null)
   const isEditing = ref(false)
   const photoToFlyTo = ref<Photo | null>(null)
+  const cacheBuster = ref<number>(Date.now())
 
   // Auth State
   const userSession = ref<any>(null)
@@ -126,10 +127,15 @@ export const usePhotoStore = defineStore('photos', () => {
     }
   }
 
+  const triggerCacheBuster = (): void => {
+    cacheBuster.value = Date.now()
+  }
+
   return {
     photos, activeCategory, searchQuery, selectedPhoto, isAdmin, isEditing,
+    cacheBuster,
     userSession, authError, filteredPhotos,
     loadPhotos, savePhoto, removePhoto, selectPhoto, toggleAdmin,
-    login, logout, initAuthListener
+    login, logout, initAuthListener, triggerCacheBuster
   }
 })
