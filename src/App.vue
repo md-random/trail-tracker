@@ -20,6 +20,11 @@
         @uploaded="store.loadPhotos()"
         @upload-completed="handleUploadComplete"
       />
+
+      <RepairDashboard
+        v-show="currentView === 'repair'"
+        @back="currentView = 'dashboard'"
+      />
     </main>
   </div>
 </template>
@@ -35,6 +40,7 @@ import MapView from '@/components/dashboard/MapView.vue'
 import AlbumView from '@/components/dashboard/AlbumView.vue'
 import PhotoDetailPanel from '@/components/dashboard/PhotoDetailPanel.vue'
 import IntakeDashboard from '@/components/intake/IntakeDashboard.vue'
+import RepairDashboard from '@/components/intake/RepairDashboard.vue'
 
 const store = usePhotoStore()
 const { isAdmin } = storeToRefs(store)

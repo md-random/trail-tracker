@@ -76,12 +76,11 @@ export interface IntakeItem {
   reasoning: string
   skipped: boolean
   approved: boolean
-  magicEnhance?: boolean
 }
 
 export type IntakeState = 'idle' | 'processing' | 'review' | 'uploading'
 
-export type ViewMode = 'dashboard' | 'intake'
+export type ViewMode = 'dashboard' | 'intake' | 'repair'
 export type DashboardTab = 'map' | 'album'
 export type CategoryId = 'all' | 'basenji' | 'sign' | 'scenic'
 export type IntakeTabId = 'duplicates' | 'unverified' | 'verified' | 'approved' | 'skipped'

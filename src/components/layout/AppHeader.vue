@@ -87,6 +87,9 @@
         <button v-if="store.isAdmin" class="btn-primary" @click="handleNav('intake')">
           <span>📥</span> Intake Photos
         </button>
+        <button v-if="store.isAdmin" class="btn-primary" @click="handleNav('repair')">
+          <span>🔧</span> Repair Photos
+        </button>
       </template>
     </div>
 
@@ -116,9 +119,11 @@ const store = usePhotoStore()
 const intakeWorkflow = useIntakeWorkflow()
 const showLoginModal = ref(false)
 
-const handleNav = (target: 'map' | 'album' | 'intake') => {
+const handleNav = (target: 'map' | 'album' | 'intake' | 'repair') => {
   if (target === 'intake') {
     emit('update:currentView', 'intake')
+  } else if (target === 'repair') {
+    emit('update:currentView', 'repair')
   } else {
     emit('update:activeTab', target)
     emit('update:currentView', 'dashboard')

@@ -191,8 +191,9 @@ export const useMap = (
       attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     })
 
-    const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-      attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+    const topoLayer = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 20,
+      attribution: 'Tiles courtesy of the U.S. Geological Survey'
     })
 
     const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -229,6 +230,13 @@ export const useMap = (
     }
 
     L.control.layers(baseMaps, undefined, { position: 'topright' }).addTo(map.value)
+
+    // Add scale control showing imperial units (miles/feet)
+    L.control.scale({
+      position: 'bottomleft',
+      imperial: true,
+      metric: false // Set to false to prioritize imperial; can be set to true to show both
+    }).addTo(map.value)
 
     const mapContainer = map.value.getContainer()
     const container = document.createElement('div')

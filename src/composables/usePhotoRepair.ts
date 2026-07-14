@@ -10,7 +10,7 @@ export const usePhotoRepair = () => {
   const { compressImage } = usePhotoProcessing()
   const store = usePhotoStore()
 
-  const repairPhotos = async (files: File[], applyEnhance: boolean): Promise<void> => {
+  const repairPhotos = async (files: File[]): Promise<void> => {
     if (files.length === 0) {
       repairMessage.value = 'No files selected.'
       return
@@ -42,6 +42,7 @@ export const usePhotoRepair = () => {
 
       // 2. Filter the dropped files to find matches in the database
       const matchedFiles = files.filter(f => photoMap.has(f.name))
+      const unmatchedCount = files.length - matchedFiles.length
 
       if (matchedFiles.length === 0) {
         repairMessage.value = 'No matches found. Drag and drop the original files that are already in your album.'
@@ -58,21 +59,21 @@ export const usePhotoRepair = () => {
         const file = matchedFiles[i]
         const id = photoMap.get(file.name)!
         
-        repairMessage.value = `[${i + 1}/${matchedFiles.length}] Processing ${file.name}...`
+        repairMessage.value = `[${i + 1}/${matchedFiles.length}] Uploading ${file.name}...`
         
         try {
-          // Compress the original file directly to 2048px high quality (with optional gentle sharpening)
-          const processedFile = await compressImage(file, 2048, 2048, 0.85, applyEnhance)
+          // Compress the original file to 2048px high quality (no magic filters)
+          const processedFile = await compressImage(file, 2048, 2048, 0.85)
 
-          // Upload and overwrite (upsert) in Supabase Storage
           const fileExt = file.name.split('.').pop() || 'jpg'
           const filePath = `${id}.${fileExt}`
 
+          // Upload and overwrite the compressed file to the exact same UUID-based path at the root of the bucket
           const { error: uploadError } = await supabaseClient.storage
             .from('photos')
             .upload(filePath, processedFile, {
               cacheControl: '3600',
-              upsert: true // Overwrites the existing low-res file
+              upsert: true
             })
 
           if (uploadError) throw uploadError
@@ -87,7 +88,7 @@ export const usePhotoRepair = () => {
       }
 
       // 4. Wrap up and reload photo store
-      repairMessage.value = `Repair complete! Successfully updated ${successCount} of ${matchedFiles.length} matching photos. No Gemini API calls were used.`
+      repairMessage.value = `Repair complete! Successfully updated ${successCount} of ${matchedFiles.length} matching photos.${unmatchedCount > 0 ? ` ${unmatchedCount} files were skipped because they do not exist in the database.` : ''}`
       
       // Force cache-busting to instantly load fresh high-res images in the browser
       store.triggerCacheBuster()

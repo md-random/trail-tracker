@@ -88,6 +88,17 @@
     <transition name="lightbox">
       <div v-if="showLightbox" class="lightbox-backdrop" @click="showLightbox = false">
         <button class="lightbox-close" @click.stop="showLightbox = false">✕</button>
+        
+        <!-- Left Navigation Button -->
+        <button 
+          v-if="hasMultiplePhotos" 
+          class="lightbox-nav prev" 
+          @click.stop="navigatePhoto('prev')"
+          title="Previous photo (Left Arrow)"
+        >
+          ‹
+        </button>
+
         <div class="lightbox-content" @click.stop>
           <img :src="selectedPhoto.storage_path + '?cb=' + store.cacheBuster" :alt="selectedPhoto.landmark || 'Photo'" class="lightbox-image" />
           <div v-if="selectedPhoto.landmark" class="lightbox-caption">
@@ -97,13 +108,23 @@
             </p>
           </div>
         </div>
+
+        <!-- Right Navigation Button -->
+        <button 
+          v-if="hasMultiplePhotos" 
+          class="lightbox-nav next" 
+          @click.stop="navigatePhoto('next')"
+          title="Next photo (Right Arrow)"
+        >
+          ›
+        </button>
       </div>
     </transition>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { usePhotoStore } from '@/stores/photoStore'
 import { storeToRefs } from 'pinia'
 import type { EditForm, Photo } from '@/types'
@@ -122,9 +143,37 @@ const editForm = ref<EditForm>({
   longitude: null
 })
 
+// Navigation indices inside filteredPhotos list
+const currentIndex = computed(() => {
+  if (!selectedPhoto.value) return -1
+  return store.filteredPhotos.findIndex(p => p.id === selectedPhoto.value.id)
+})
+
+const hasMultiplePhotos = computed(() => {
+  return store.filteredPhotos.length > 1
+})
+
+const navigatePhoto = (direction: 'prev' | 'next') => {
+  if (currentIndex.value === -1 || !hasMultiplePhotos.value) return
+  
+  let newIndex = currentIndex.value
+  if (direction === 'prev') {
+    newIndex = (newIndex - 1 + store.filteredPhotos.length) % store.filteredPhotos.length
+  } else {
+    newIndex = (newIndex + 1) % store.filteredPhotos.length
+  }
+  
+  const nextPhoto = store.filteredPhotos[newIndex]
+  store.selectPhoto(nextPhoto)
+}
+
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && showLightbox.value) {
     showLightbox.value = false
+  } else if (e.key === 'ArrowLeft' && showLightbox.value) {
+    navigatePhoto('prev')
+  } else if (e.key === 'ArrowRight' && showLightbox.value) {
+    navigatePhoto('next')
   }
 }
 
@@ -495,5 +544,42 @@ const handleDelete = async (): Promise<void> => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Lightbox navigation buttons */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10000;
+  user-select: none;
+  line-height: 1;
+  padding-bottom: 6px;
+}
+
+.lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.lightbox-nav.prev {
+  left: 32px;
+}
+
+.lightbox-nav.next {
+  right: 32px;
 }
 </style>

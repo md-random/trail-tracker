@@ -41,7 +41,7 @@ const uploadProgressMessage = ref('')
 const uploadPercentage = ref(0)
 
 // Shared photo processing state
-const { processFiles, compressImage, enhanceImageFile, processedCount, totalCount, progressPercentage, progressMessage } = usePhotoProcessing()
+const { processFiles, compressImage, processedCount, totalCount, progressPercentage, progressMessage } = usePhotoProcessing()
 
 export const useIntakeWorkflow = () => {
   watch(
@@ -386,14 +386,8 @@ export const useIntakeWorkflow = () => {
 
           try {
             const sourceFile = photo.originalFile || photo.file
-            let fileToUpload
-            if (item.magicEnhance) {
-              uploadProgressMessage.value = `Enhancing ${photo.file.name}...`
-              fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, true)
-            } else {
-              uploadProgressMessage.value = `Processing ${photo.file.name}...`
-              fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, false)
-            }
+            uploadProgressMessage.value = `Processing ${photo.file.name}...`
+            const fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85)
 
             const photoMetadata = {
               ...item,
@@ -406,6 +400,8 @@ export const useIntakeWorkflow = () => {
           } catch (e) {
             console.error(`Upload failed for ${photo.file.name}:`, e)
           }
+          // Yield to let UI and background analysis breathe
+          await new Promise(r => setTimeout(r, 50))
         }
       } else {
         const sourceFile = item.originalFile || item.file
@@ -415,14 +411,8 @@ export const useIntakeWorkflow = () => {
         uploadPercentage.value = Math.round((uploadedPhotosCount / totalPhotosToUpload) * 100)
 
         try {
-          let fileToUpload
-          if (item.magicEnhance) {
-            uploadProgressMessage.value = `Enhancing ${sourceFile.name}...`
-            fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, true)
-          } else {
-            uploadProgressMessage.value = `Processing ${sourceFile.name}...`
-            fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85, false)
-          }
+          uploadProgressMessage.value = `Processing ${sourceFile.name}...`
+          const fileToUpload = await compressImage(sourceFile, 2048, 2048, 0.85)
 
           await supabase.uploadPhoto(item, fileToUpload)
           uploadedPhotosCount++
@@ -430,6 +420,8 @@ export const useIntakeWorkflow = () => {
         } catch (e) {
           console.error(`Upload failed for ${sourceFile.name}:`, e)
         }
+        // Yield to let UI and background analysis breathe
+        await new Promise(r => setTimeout(r, 50))
       }
 
       // Clean up object URLs

@@ -6,7 +6,7 @@ TrailTracker is a high-performance, responsive single-page web application engin
 
 ## 🎨 System Overview & Core Features
 
-TrailTracker is designed with two core views: the **Interactive Dashboard** (Map/Album views) and the **Intake Pipeline**.
+TrailTracker is designed with three core views: the **Interactive Dashboard** (Map/Album views), the **Intake Pipeline**, and the **Repair Dashboard**.
 
 ```mermaid
 graph TD
@@ -41,7 +41,7 @@ graph TD
 *   **Clustering & Keeper Selection**: Groups duplicate photo bursts (taken within 2 minutes of each other) into clusters and calls Gemini to choose the single best "keeper" photo, filtering out sub-optimal or duplicate images.
 *   **Queue Appending**: Dropping new image folders while the app is open automatically appends the files to the active queue instead of overwriting it, enabling progressive sorting.
 *   **Skipped Items Tab**: Automatically sorts non-adventure files (e.g., indoor spaces, screenshots, parking lots) into a "Skipped" tab with AI-provided reasoning.
-*   **🔧 Retroactive Photo Repair Tool**: A specialized drag-and-drop/browse interface that matches original high-resolution photos on your computer to existing database rows using the original filenames. It compresses them and overwrites the blurry files in Supabase Storage at **$0.00 Gemini API cost**, preserving all your custom metadata.
+*   **🔧 Retroactive Photo Repair Dashboard**: A dedicated dashboard with a drag-and-drop/browse interface that matches original high-resolution photos on your computer to existing database records. It compresses the files and overwrites them in Supabase Storage at **$0.00 Gemini API cost**, preserving all metadata while remaining strictly decoupled from the main intake pipeline.
 
 ---
 
@@ -49,7 +49,7 @@ graph TD
 
 ### 1. Client-Side Memory & Image Quality Optimization
 *   **Challenge**: Importing hundreds of raw camera photos (8MB–20MB each) caused browser tab crashes. Compressing them immediately to `1024px` at `70%` quality solved the RAM issue but made images look pixelated in the fullscreen lightbox. Furthermore, applying sharpening filters to already-compressed images caused double-compression and created a harsh, metallic "crosshatch" wire-mesh look.
-*   **Solution**: Re-architected the pipeline into a **dual-resolution system**. During intake, the UI uses lightweight `1024px` previews, keeping RAM footprint under **35MB**. However, the system retains a lightweight `originalFile` pointer in memory (0MB RAM impact). At the moment of upload, the original file is processed and compressed in a single pass to **`2048px`** at **`85%` quality** with a **75% softer sharpening filter** (reducing center weight from `2.6` to `1.4`), resulting in pristine, natural-looking images on Retina and 4K displays.
+*   **Solution**: Re-architected the pipeline into a **dual-resolution system**. During intake, the UI uses lightweight `1024px` previews, keeping RAM footprint under **35MB**. The system retains a lightweight `originalFile` pointer in memory (0MB RAM impact). At the moment of upload, the original file is processed and compressed in a single pass to **`2048px`** at **`85%` quality** without any artificial sharpening or enhancement filters to avoid double-compression artifacts and halos, preserving the pure original shot.
 
 ### 2. CDN Caching & Real-Time Image Overwrites
 *   **Challenge**: When the Repair Tool overwrites a blurry photo in Supabase Storage, the image URL remains identical. Because Supabase buckets are fronted by a Cloudflare CDN, the old `768x1024` image remains cached at the CDN level. Doing a hard refresh only clears local browser cache, leaving the blurry image on screen.
