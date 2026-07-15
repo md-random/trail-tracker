@@ -63,9 +63,12 @@ const formatDate = (dateStr: string | null): string => {
   border: 0.5px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 14px !important;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15) !important;
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
-  height: 340px;
+  width: 100%;
+  margin-bottom: 1.25rem;
+  break-inside: avoid;
+  height: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
@@ -77,15 +80,15 @@ const formatDate = (dateStr: string | null): string => {
 
 .card-img-wrapper {
   position: relative;
-  height: 200px;
   background: #000;
   overflow: hidden;
+  width: 100%;
 }
 
 .card-img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  display: block;
   transition: transform 0.5s ease;
 }
 

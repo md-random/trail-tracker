@@ -25,8 +25,8 @@ graph TD
 *   **Custom Map Pins**: Displays custom-designed markers (e.g. campsite pins `⛺`) to visualize locations.
 *   **Interactive Clusters**: Groups nearby markers dynamically to maintain performance and avoid overlap on broad zoom levels.
 
-### 2. Categorized Album & Search (Album View)
-*   **Dynamic Categorization**: Filters photos instantly into curated grids (e.g., "🐕 Basenjis", "🪧 Trail Signs", "🏔️ Scenic Vistas") powered by reactive Pinia computed properties.
+*   **Responsive Masonry Grid**: Displays photos in a fluid, column-based masonry layout that preserves the natural aspect ratio of every image. Portrait and landscape shots render side-by-side in their entirety with zero cropping.
+*   **Dynamic Categorization**: Filters photos instantly into curated collections (e.g., "🐕 Basenjis", "🪧 Trail Signs", "🏔️ Scenic Vistas") powered by reactive Pinia computed properties.
 *   **State Synchronization**: Automatically re-fetches data from the database the moment an intake upload batch completes, ensuring the UI stays perfectly synced with the server.
 *   **Text Search Index**: Fully indexes image descriptions, landmarks, states, cities, and tags locally for real-time query searching.
 
@@ -35,6 +35,7 @@ graph TD
 *   **Expandable Georeferencing Modal**: The intake pipeline's mini-map features a full-screen expand toggle, providing administrators a massive, workable area for precise map searches and pin-dragging.
 *   **Draggable Georeferencing**: Administrators can drag pins directly on the map interface. Pin relocation auto-updates the database coordinates in real-time.
 *   **Granular Metadata Control**: View location confidence levels (High, Medium, Low, None) and AI reasoning details, edit tags in a clean forms panel, or delete photos from the library.
+*   **Aspect-Ratio Conforming Preview**: The sidebar details panel centers and fits the selected image to its native aspect ratio (with a max-height limit) to display portrait subjects fully without cropping.
 
 ### 4. High-Throughput Intake Pipeline & Queue
 *   **EXIF Parsing**: Extracts embedded GPS coordinates and timestamps directly in the browser via `ExifReader`.

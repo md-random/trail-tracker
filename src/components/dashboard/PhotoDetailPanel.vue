@@ -285,20 +285,25 @@ const handleDelete = async (): Promise<void> => {
 
 .panel-hero {
   width: 100%;
-  height: 250px;
+  max-height: 400px;
   overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .panel-hero img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 400px;
+  object-fit: contain;
   cursor: zoom-in;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .panel-hero img:hover {
-  transform: scale(1.03);
+  transform: scale(1.02);
 }
 
 .panel-meta {

@@ -86,9 +86,9 @@ const categories: Category[] = [
 }
 
 .photo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
+  column-width: 320px;
+  column-gap: 1.25rem;
+  width: 100%;
 }
 
 .empty-album {
