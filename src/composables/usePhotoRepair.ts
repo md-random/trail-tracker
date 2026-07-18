@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { supabaseClient } from '@/services/supabaseService'
+import { supabaseClient, getImageDimensions } from '@/services/supabaseService'
 import { usePhotoProcessing } from './usePhotoProcessing'
 import { usePhotoStore } from '@/stores/photoStore'
 
@@ -72,11 +72,22 @@ export const usePhotoRepair = () => {
           const { error: uploadError } = await supabaseClient.storage
             .from('photos')
             .upload(filePath, processedFile, {
-              cacheControl: '3600',
+              cacheControl: '31536000',
               upsert: true
             })
 
           if (uploadError) throw uploadError
+
+          // Get dimensions of repaired file
+          const { width, height } = await getImageDimensions(processedFile)
+
+          // Update database record to store dimensions
+          const { error: dbError } = await supabaseClient
+            .from('photos')
+            .update({ width, height })
+            .eq('id', id)
+
+          if (dbError) throw dbError
 
           successCount++
         } catch (err: any) {
@@ -94,7 +105,7 @@ export const usePhotoRepair = () => {
       store.triggerCacheBuster()
 
       // Reload photos in the store to update the UI instantly
-      await store.loadPhotos()
+      await store.loadPhotos(true)
       
     } catch (err: any) {
       console.error('Error during photo repair process:', err)

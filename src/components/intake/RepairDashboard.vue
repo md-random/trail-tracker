@@ -91,6 +91,7 @@ const repairFolderInput = ref<HTMLInputElement | null>(null)
 
 const { isRepairing, repairProgress, repairMessage, repairPhotos } = usePhotoRepair()
 
+
 // Repair Mode Actions
 const triggerRepairFileSelect = () => {
   repairFileInput.value?.click()

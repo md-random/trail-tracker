@@ -16,6 +16,8 @@ export interface Photo {
   tags: string[]
   is_deleted: boolean
   created_at: string
+  width?: number | null
+  height?: number | null
 }
 
 export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'

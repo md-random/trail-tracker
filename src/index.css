@@ -49,18 +49,18 @@ body {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 16px;
+  height: 16px;
 }
 ::-webkit-scrollbar-track {
   background: hsl(var(--bg-base));
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border-color));
-  border-radius: 4px;
+  background: hsl(var(--color-text-muted) / 0.3);
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
+  background: hsl(var(--primary) / 0.7);
 }
 
 /* Glassmorphism Panel Utility */

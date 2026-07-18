@@ -42,9 +42,18 @@ export const usePhotoStore = defineStore('photos', () => {
   })
 
   // ─── Actions ───
-  const loadPhotos = async (): Promise<void> => {
+  const loadPhotos = async (forceRefetch = false): Promise<void> => {
     try {
-      photos.value = await supabase.getPhotos()
+      if (!forceRefetch) {
+        const cached = sessionStorage.getItem('trailtracker_photos_cache')
+        if (cached) {
+          photos.value = JSON.parse(cached)
+          return
+        }
+      }
+      const data = await supabase.getPhotos()
+      photos.value = data
+      sessionStorage.setItem('trailtracker_photos_cache', JSON.stringify(data))
     } catch (e) {
       console.error('Failed to load photos:', e)
     }
@@ -60,6 +69,7 @@ export const usePhotoStore = defineStore('photos', () => {
       if (selectedPhoto.value?.id === updated.id) {
         selectedPhoto.value = updated
       }
+      sessionStorage.setItem('trailtracker_photos_cache', JSON.stringify(photos.value))
     } catch (e) {
       console.error('Failed to save photo:', e)
       throw e
@@ -74,6 +84,7 @@ export const usePhotoStore = defineStore('photos', () => {
         selectedPhoto.value = null
         isEditing.value = false
       }
+      sessionStorage.setItem('trailtracker_photos_cache', JSON.stringify(photos.value))
     } catch (e) {
       console.error('Failed to delete photo:', e)
       throw e
@@ -110,14 +121,14 @@ export const usePhotoStore = defineStore('photos', () => {
     supabase.supabaseClient.auth.getSession().then(({ data: { session } }) => {
       userSession.value = session
       if (session) {
-        loadPhotos()
+        loadPhotos(true)
       }
     })
 
     // Listen for changes
     supabase.supabaseClient.auth.onAuthStateChange((_event, session) => {
       userSession.value = session
-      loadPhotos()
+      loadPhotos(true)
     })
   }
 

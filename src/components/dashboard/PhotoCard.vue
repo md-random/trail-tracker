@@ -1,7 +1,17 @@
 <template>
   <div class="photo-card glass hover-scale">
-    <div class="card-img-wrapper">
-      <img :src="photo.storage_path + '?cb=' + store.cacheBuster" class="card-img" />
+    <div 
+      class="card-img-wrapper" 
+      :class="{ 'is-loading': !imageLoaded }"
+      :style="photo.width && photo.height ? { aspectRatio: `${photo.width} / ${photo.height}` } : {}"
+    >
+      <img 
+        :src="photo.storage_path + '?cb=' + store.cacheBuster" 
+        class="card-img" 
+        :class="{ 'is-loaded': imageLoaded }"
+        loading="lazy" 
+        @load="imageLoaded = true" 
+      />
       <div class="card-badges">
         <span v-for="tag in photo.tags.slice(0, 2)" :key="tag" :class="['badge-tag', tag]">
           {{ tag }}
@@ -39,10 +49,12 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { Photo } from '@/types'
 import { usePhotoStore } from '@/stores/photoStore'
 
 const store = usePhotoStore()
+const imageLoaded = ref(false)
 
 const { photo } = defineProps<{
   photo: Photo
@@ -85,11 +97,37 @@ const formatDate = (dateStr: string | null): string => {
   width: 100%;
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.card-img-wrapper.is-loading {
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.09) 37%,
+    rgba(255, 255, 255, 0.03) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
 .card-img {
   width: 100%;
   height: auto;
   display: block;
-  transition: transform 0.5s ease;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.5s ease;
+}
+
+.card-img.is-loaded {
+  opacity: 1;
 }
 
 .photo-card:hover .card-img {

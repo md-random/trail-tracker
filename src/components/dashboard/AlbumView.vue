@@ -11,7 +11,7 @@
       </button>
     </div>
 
-    <div class="photo-grid-scroll">
+    <div class="photo-grid-scroll" @scroll="handleScroll">
       <div v-if="filteredPhotos.length === 0" class="empty-album glass">
         <span class="empty-icon">📭</span>
         <h3>No adventure photos match your filter</h3>
@@ -44,6 +44,12 @@ const categories: Category[] = [
   { id: 'sign', name: '🪧 Trail Signs' },
   { id: 'scenic', name: '🏔️ Scenic Vistas' }
 ]
+
+const handleScroll = () => {
+  if (store.selectedPhoto) {
+    store.selectPhoto(null)
+  }
+}
 </script>
 
 <style scoped>

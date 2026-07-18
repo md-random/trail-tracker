@@ -60,6 +60,11 @@ watch(() => store.photoToFlyTo, (photo) => {
   }
 })
 
+// Close photo detail panel on tab or view switch
+watch([activeTab, currentView], () => {
+  store.selectPhoto(null)
+})
+
 const handleUploadComplete = async (): Promise<void> => {
   await store.loadPhotos()
   currentView.value = 'dashboard'

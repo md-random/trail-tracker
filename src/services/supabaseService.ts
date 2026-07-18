@@ -32,6 +32,36 @@ export const getPhotos = async (): Promise<Photo[]> => {
   return data as Photo[]
 }
 
+export const getImageDimensions = (source: File | string): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    let url: string
+    if (typeof source === 'string') {
+      url = source
+      img.crossOrigin = 'anonymous'
+    } else {
+      url = URL.createObjectURL(source)
+    }
+
+    img.onload = () => {
+      const dimensions = { width: img.naturalWidth || img.width, height: img.naturalHeight || img.height }
+      if (typeof source !== 'string') {
+        URL.revokeObjectURL(url)
+      }
+      resolve(dimensions)
+    }
+
+    img.onerror = () => {
+      if (typeof source !== 'string') {
+        URL.revokeObjectURL(url)
+      }
+      resolve({ width: 0, height: 0 })
+    }
+
+    img.src = url
+  })
+}
+
 export const uploadPhoto = async (metadata: Partial<Photo>, imageFile: File): Promise<Photo> => {
   const id = crypto.randomUUID()
   const fileExt = imageFile.name.split('.').pop() || 'jpg'
@@ -40,7 +70,7 @@ export const uploadPhoto = async (metadata: Partial<Photo>, imageFile: File): Pr
   const { error: uploadError } = await supabaseClient.storage
     .from('photos')
     .upload(filePath, imageFile, {
-      cacheControl: '3600',
+      cacheControl: '31536000',
       upsert: true
     })
 
@@ -54,6 +84,9 @@ export const uploadPhoto = async (metadata: Partial<Photo>, imageFile: File): Pr
 
   const rawLat = metadata.latitude !== undefined && metadata.latitude !== null ? Number(metadata.latitude) : null
   const rawLng = metadata.longitude !== undefined && metadata.longitude !== null ? Number(metadata.longitude) : null
+
+  // Capture image dimensions in background
+  const dims = await getImageDimensions(imageFile)
 
   const newPhoto = {
     id,
@@ -70,7 +103,9 @@ export const uploadPhoto = async (metadata: Partial<Photo>, imageFile: File): Pr
     reasoning: typeof metadata.reasoning === 'string' ? { details: metadata.reasoning } : metadata.reasoning || { details: 'Uploaded via Supabase client.' },
     tags: metadata.tags || [],
     is_deleted: false,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    width: dims.width || null,
+    height: dims.height || null
   }
 
   const { data, error } = await supabaseClient

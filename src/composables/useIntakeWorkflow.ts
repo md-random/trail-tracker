@@ -438,7 +438,7 @@ export const useIntakeWorkflow = () => {
     items.value = items.value.filter(item => !uploadedIds.has(item.id) && !item.skipped)
 
     // Tell the main album to reload and fetch the new photos we just uploaded
-    usePhotoStore().loadPhotos()
+    usePhotoStore().loadPhotos(true)
 
     if (items.value.length > 0) {
       state.value = 'review'
