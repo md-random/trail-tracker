@@ -10,25 +10,26 @@ TrailTracker is designed with three core views: the **Interactive Dashboard** (M
 
 ```mermaid
 graph TD
-    A[Image Drop / Folder Import] --> B[Canvas Downsampler 1024px]
+    A[Image Drop / Folder Import] --> B[Canvas Downsampler 2048px]
     B --> C[EXIF Extraction & DB-Preflight Filter]
     C --> D[Temporal Clusterer 2-Min Window]
     D --> E[Gemini 3.5 Flash Vision AI]
-    E --> F[Pinia Store / Local Storage Mock DB]
+    E --> F[Supabase PostgreSQL / Storage]
     F --> G[Interactive Map View / Leaflet]
     F --> H[Album View / Categorized Grid]
 ```
 
 ### 1. Interactive Maps & Geospatial Data (Map View)
-*   **Geospatial Visualization**: Renders coordinates on an interactive map using **Leaflet** with support for multiple tile layers (Satellite, Topographic, Light Positron, Dark Matter, OpenStreetMap, and a dedicated **Waymarked Trails hiking overlay**).
-*   **Location Discovery Search**: Features an integrated OpenStreetMap Nominatim search bar directly in the map UI, allowing users to query cities, parks, and specific trails, instantly centering the map on the results.
+*   **Geospatial Visualization**: Renders coordinates on an interactive map using **Leaflet** with support for multiple tile layers (Streets, Light Positron, Topographic, Dark Matter, Satellite, and a dedicated **Waymarked Trails hiking overlay**).
 *   **Custom Map Pins**: Displays custom-designed markers (e.g. campsite pins `⛺`) to visualize locations.
 *   **Interactive Clusters**: Groups nearby markers dynamically to maintain performance and avoid overlap on broad zoom levels.
+*   **Dynamic Fly-To**: Selecting a photo from the album or detail panel triggers a smooth camera flight to the exact geospatial coordinates on the map.
 
-*   **Responsive Masonry Grid**: Displays photos in a fluid, column-based masonry layout that preserves the natural aspect ratio of every image. Portrait and landscape shots render side-by-side in their entirety with zero cropping.
-*   **Dynamic Categorization**: Filters photos instantly into curated collections (e.g., "🐕 Basenjis", "🪧 Trail Signs", "🏔️ Scenic Vistas") powered by reactive Pinia computed properties.
+### 2. High-Performance Album View
+*   **Stable Masonry Grid**: Displays photos in a fluid, column-based masonry layout that preserves the natural aspect ratio of every image. Portrait and landscape shots render side-by-side in their entirety with zero cropping or layout shift.
+*   **Unified Global Filters Panel**: A slide-down glassmorphic drawer containing a full text search input, Category pills (All, Basenjis, Trail Signs, Scenic Vistas), and a State dropdown filter.
+*   **State Normalization**: Automatically merges raw abbreviations (e.g. `CO`, `Co`, `CO` ➔ `Colorado`, `az` ➔ `Arizona`) dynamically on read and write, providing a clean, duplicate-free state selector list.
 *   **State Synchronization**: Automatically re-fetches data from the database the moment an intake upload batch completes, ensuring the UI stays perfectly synced with the server.
-*   **Text Search Index**: Fully indexes image descriptions, landmarks, states, cities, and tags locally for real-time query searching.
 
 ### 3. Administrative Editing & Metadata Management
 *   **Admin Mode Access**: Grants editing privileges allowing administrators to correct coordinates, landmarks, locations, description text, and tags.
@@ -38,7 +39,7 @@ graph TD
 *   **Aspect-Ratio Conforming Preview**: The sidebar details panel centers and fits the selected image to its native aspect ratio (with a max-height limit) to display portrait subjects fully without cropping.
 
 ### 4. High-Throughput Intake Pipeline & Queue
-*   **EXIF Parsing**: Extracts embedded GPS coordinates and timestamps directly in the browser via `ExifReader`.
+*   **EXIF Parsing**: Extracts embedded GPS coordinates, image widths, heights, and timestamps directly in the browser via `ExifReader`.
 *   **Clustering & Keeper Selection**: Groups duplicate photo bursts (taken within 2 minutes of each other) into clusters and calls Gemini to choose the single best "keeper" photo, filtering out sub-optimal or duplicate images.
 *   **Queue Appending**: Dropping new image folders while the app is open automatically appends the files to the active queue instead of overwriting it, enabling progressive sorting.
 *   **Skipped Items Tab**: Automatically sorts non-adventure files (e.g., indoor spaces, screenshots, parking lots) into a "Skipped" tab with AI-provided reasoning.
@@ -49,28 +50,30 @@ graph TD
 ## 🏗️ Core Engineering Challenges & Solutions
 
 ### 1. Client-Side Memory & Image Quality Optimization
-*   **Challenge**: Importing hundreds of raw camera photos (8MB–20MB each) caused browser tab crashes. Compressing them immediately to `1024px` at `70%` quality solved the RAM issue but made images look pixelated in the fullscreen lightbox. Furthermore, applying sharpening filters to already-compressed images caused double-compression and created a harsh, metallic "crosshatch" wire-mesh look.
-*   **Solution**: Re-architected the pipeline into a **dual-resolution system**. During intake, the UI uses lightweight `1024px` previews, keeping RAM footprint under **35MB**. The system retains a lightweight `originalFile` pointer in memory (0MB RAM impact). At the moment of upload, the original file is processed and compressed in a single pass to **`2048px`** at **`85%` quality** without any artificial sharpening or enhancement filters to avoid double-compression artifacts and halos, preserving the pure original shot.
+*   **Challenge**: Importing hundreds of raw camera photos (8MB–20MB each) caused browser tab crashes. Compressing them immediately to `1024px` at `70%` quality solved the RAM issue but made images look pixelated in the fullscreen lightbox.
+*   **Solution**: Re-architected the pipeline into a **dual-resolution system**. During intake, the UI uses lightweight `1024px` previews, keeping RAM footprint under **35MB**. The system retains a lightweight `originalFile` pointer in memory. At the moment of upload, the original file is processed and compressed in a single pass to **`2048px`** at **`85%` quality** without any artificial sharpening or enhancement filters to avoid double-compression artifacts, preserving the pure original shot.
 
-### 2. CDN Caching & Real-Time Image Overwrites
+### 2. Egress Bandwidth & Caching Strategy (Cloudflare CDN & Local Cache)
+*   **Challenge**: Standard media loading from Supabase Storage buckets consumed substantial egress bandwidth, creating scaling quota risks.
+*   **Solution**: 
+  - **Storage Caching**: Programmed the upload pipeline to apply a `1-year cache control` header (`public, max-age=31536000`) on all image uploads to Supabase, enabling Cloudflare's CDN and browsers to serve assets directly from cache.
+  - **Metadata Cache**: Implemented frontend `sessionStorage` caching inside the Pinia store. Subsequent app loads resolve database metadata directly from local memory storage rather than querying the SQL backend repeatedly on page refresh.
+
+### 3. Eliminating Layout Shift (CLS) in Masonry Grids
+*   **Challenge**: Dynamic masonry structures suffer from Cumulative Layout Shift (CLS) while images are downloading, causing elements to jump vertically as dimensions resolve.
+*   **Solution**: Analyzed image dimensions dynamically on the client side using a browser-based image parser during upload, saving width and height columns directly to the SQL database. Applied inline `aspect-ratio` CSS values to photo cards and loaded shimmering skeleton placeholder frames in the grid, ensuring layouts remain perfectly static while images load in the background.
+
+### 4. CDN Caching & Real-Time Image Overwrites
 *   **Challenge**: When the Repair Tool overwrites a blurry photo in Supabase Storage, the image URL remains identical. Because Supabase buckets are fronted by a Cloudflare CDN, the old `768x1024` image remains cached at the CDN level. Doing a hard refresh only clears local browser cache, leaving the blurry image on screen.
 *   **Solution**: Implemented an app-wide reactive `cacheBuster` timestamp in the Pinia store. The moment a repair finishes, the store triggers the cache buster, and all active image components (`PhotoCard.vue`, `PhotoDetailPanel.vue`) immediately append a query parameter (`?cb=[timestamp]`) to their image sources. This forces Cloudflare to bypass the CDN cache and instantly load the new high-resolution image on the user's screen.
 
-### 3. State-Aware Session Recovery & Cost Control
-*   **Challenge**: Page refreshes or accidental interruptions cleared intake progress, forcing users to re-upload and pay double API fees for re-analyzing the same pictures.
-*   **Solution**: Implemented a local persistence cache (`intake_analysis_cache` in `localStorage`) keyed by a sorted composite hash of filenames and timestamps. Before dispatching request blocks to Gemini, the pipeline checks the cache, instantly restoring completed analyses and conserving AI token cost.
+### 5. Detail Panel UX & Auto-Dismissal
+*   **Challenge**: Open photo detail panels stayed active during view shifts or scrolling, creating visual overlaps and covers.
+*   **Solution**: Configured watcher callbacks to clear the active selection when toggling views (Map vs Album) or tabs, and added scroll listeners on the grid container to close detail panels when scrolling away to browse.
 
-### 4. Database-Level Duplicate Filtering
-*   **Challenge**: Redundant uploads of identical files already present in the database wasted storage space and AI credits.
-*   **Solution**: Implemented a database duplicate filter that compares incoming files against the library prior to ingestion. If a filename and EXIF timestamp match an existing record, the image is skipped upfront.
-
-### 5. Leaflet Size Invalidation & UI Rendering
-*   **Challenge**: Switching to the map tab after initializing it while hidden resulted in broken/warped tile alignments due to Leaflet caching a container size of `0x0`.
-*   **Solution**: Configured tab-state bindings to call `map.invalidateSize()` after a `nextTick` transition whenever the map tab is selected, correcting layout renders instantly.
-
-### 6. Custom Map UI & Cluster Rendering Fixes
-*   **Challenge**: Adding search functionality caused UI control overlaps, and grouped photo clusters rendered invisibly on the map due to styling conflicts.
-*   **Solution**: Re-architected Leaflet's control positions to cleanly align the Search, Zoom, and Layer tools. Implemented specific `.custom-cluster-marker` CSS logic to restore visibility to clustered coordinate groups at broad zoom levels.
+### 6. High-Contrast Scrollbars
+*   **Challenge**: Default browser scrollbar tracks were narrow and lacked contrast against the application's dark mode visual layout.
+*   **Solution**: Custom-built custom webkit scrollbar tracks with double thickness (16px) and high-contrast styling to optimize scroll readability and clicking in desktop browsers.
 
 ---
 
@@ -78,6 +81,7 @@ graph TD
 
 *   **Frontend Framework**: Vue 3 (Composition API, `<script setup>`, TypeScript)
 *   **State Store**: Pinia (reactive state stores, getters, and action triggers)
+*   **Database & Storage**: Supabase (PostgreSQL, Supabase Auth, Storage bucket pipelines)
 *   **Mapping Engine**: Leaflet (interactive maps, layers, event handling, draggable markers)
 *   **AI Multimodal Vision**: `@google/generative-ai` (Gemini 3.5 Flash API integration with token tracking and rate limiting controls)
 *   **Metadata Parser**: ExifReader
@@ -116,7 +120,7 @@ interface GeminiAnalysis {
 Configure a `.env.local` file in the root directory:
 
 ```env
-# Supabase Backend credentials (to connect actual backend database)
+# Supabase Backend credentials
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
@@ -138,10 +142,3 @@ VITE_GEMINI_API_KEY=your_gemini_api_key_here
    ```bash
    npm run build
    ```
-
----
-
-## 🗺️ Future Roadmap
-
-*   [ ] **Production Database**: Replace the client-side mock `localStorage` wrapper in `supabaseService.ts` with real PostgreSQL integration via `@supabase/supabase-js`.
-*   [ ] **Cloud Storage Bucket**: Set up media uploads to an actual cloud storage bucket to host the pre-processed photography assets securely.
