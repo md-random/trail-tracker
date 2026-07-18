@@ -77,6 +77,29 @@
           <span>Intake Queue ({{ intakeWorkflow.remainingCount.value }} remaining)</span>
         </button>
       </div>
+
+      <button 
+        v-if="currentView === 'dashboard'"
+        :class="['filter-toggle-btn', { active: showFilters }]" 
+        @click="handleToggleFilters"
+        style="margin-left: 0.75rem;"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="14" 
+          height="14" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2.2" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          class="toggle-btn-icon"
+        >
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <span>Filters</span>
+      </button>
     </div>
 
     <div class="header-right">
@@ -105,19 +128,25 @@ import { useIntakeWorkflow } from '@/composables/useIntakeWorkflow'
 import type { ViewMode, DashboardTab } from '@/types'
 import LoginModal from './LoginModal.vue'
 
-const { currentView, activeTab } = defineProps<{
+const { currentView, activeTab, showFilters } = defineProps<{
   currentView: ViewMode
   activeTab: DashboardTab
+  showFilters: boolean
 }>()
 
 const emit = defineEmits<{
   'update:activeTab': [tab: DashboardTab]
   'update:currentView': [view: ViewMode]
+  'toggle-filters': []
 }>()
 
 const store = usePhotoStore()
 const intakeWorkflow = useIntakeWorkflow()
 const showLoginModal = ref(false)
+
+const handleToggleFilters = () => {
+  emit('toggle-filters')
+}
 
 const handleNav = (target: 'map' | 'album' | 'intake' | 'repair') => {
   if (target === 'intake') {
@@ -218,6 +247,35 @@ const handleAdminClick = async (): Promise<void> => {
   border-color: hsl(37 90% 50% / 0.5) !important;
   color: hsl(37 90% 50%) !important;
   background: hsl(37 90% 50% / 0.1) !important;
+}
+
+.filter-toggle-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  cursor: pointer;
+  border-radius: 9px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  backdrop-filter: blur(10px);
+}
+
+.filter-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.filter-toggle-btn.active {
+  background: hsl(var(--primary) / 0.15) !important;
+  border-color: hsl(var(--primary) / 0.4) !important;
+  color: #fff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
 }
 
 </style>

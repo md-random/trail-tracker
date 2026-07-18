@@ -1,16 +1,5 @@
 <template>
   <div class="album-view-container animate-fade-in">
-    <div class="category-tabs">
-      <button
-        v-for="cat in categories"
-        :key="cat.id"
-        :class="['category-btn', { active: activeCategory === cat.id }]"
-        @click="activeCategory = cat.id"
-      >
-        {{ cat.name }}
-      </button>
-    </div>
-
     <div class="photo-grid-scroll" @scroll="handleScroll">
       <div v-if="filteredPhotos.length === 0" class="empty-album glass">
         <span class="empty-icon">📭</span>
@@ -33,17 +22,9 @@
 import { usePhotoStore } from '@/stores/photoStore'
 import { storeToRefs } from 'pinia'
 import PhotoCard from './PhotoCard.vue'
-import type { Category } from '@/types'
 
 const store = usePhotoStore()
-const { filteredPhotos, activeCategory } = storeToRefs(store)
-
-const categories: Category[] = [
-  { id: 'all', name: '🌲 All Adventures' },
-  { id: 'basenji', name: '🐕 Basenjis' },
-  { id: 'sign', name: '🪧 Trail Signs' },
-  { id: 'scenic', name: '🏔️ Scenic Vistas' }
-]
+const { filteredPhotos } = storeToRefs(store)
 
 const handleScroll = () => {
   if (store.selectedPhoto) {
@@ -60,30 +41,7 @@ const handleScroll = () => {
   gap: 1rem;
 }
 
-.category-tabs {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 0.25rem;
-  flex-shrink: 0;
-}
 
-.category-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.5);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.category-btn.active {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
 
 .photo-grid-scroll {
   flex: 1;

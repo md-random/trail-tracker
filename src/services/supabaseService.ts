@@ -21,6 +21,29 @@ if (import.meta.env.DEV) {
 
 export const supabaseClient = client
 
+const stateMap: Record<string, string> = {
+  'al': 'Alabama', 'ak': 'Alaska', 'az': 'Arizona', 'ar': 'Arkansas', 'ca': 'California',
+  'co': 'Colorado', 'ct': 'Connecticut', 'de': 'Delaware', 'fl': 'Florida', 'ga': 'Georgia',
+  'hi': 'Hawaii', 'id': 'Idaho', 'il': 'Illinois', 'in': 'Indiana', 'ia': 'Iowa',
+  'ks': 'Kansas', 'ky': 'Kentucky', 'la': 'Louisiana', 'me': 'Maine', 'md': 'Maryland',
+  'ma': 'Massachusetts', 'mi': 'Michigan', 'mn': 'Minnesota', 'ms': 'Mississippi', 'mo': 'Missouri',
+  'mt': 'Montana', 'ne': 'Nebraska', 'nv': 'Nevada', 'nh': 'New Hampshire', 'nj': 'New Jersey',
+  'nm': 'New Mexico', 'ny': 'New York', 'nc': 'North Carolina', 'nd': 'North Dakota', 'oh': 'Ohio',
+  'ok': 'Oklahoma', 'or': 'Oregon', 'pa': 'Pennsylvania', 'ri': 'Rhode Island', 'sc': 'South Carolina',
+  'sd': 'South Dakota', 'tn': 'Tennessee', 'tx': 'Texas', 'ut': 'Utah', 'vt': 'Vermont',
+  'va': 'Virginia', 'wa': 'Washington', 'wv': 'West Virginia', 'wi': 'Wisconsin', 'wy': 'Wyoming'
+}
+
+export const normalizeStateName = (stateStr: string | null | undefined): string | null => {
+  if (!stateStr) return null
+  const cleaned = stateStr.trim().toLowerCase()
+  if (stateMap[cleaned]) {
+    return stateMap[cleaned]
+  }
+  // Title case fallback
+  return stateStr.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+}
+
 export const getPhotos = async (): Promise<Photo[]> => {
   const { data, error } = await supabaseClient
     .from('photos')
@@ -29,7 +52,14 @@ export const getPhotos = async (): Promise<Photo[]> => {
     .order('taken_at', { ascending: false })
 
   if (error) throw error
-  return data as Photo[]
+  
+  // Normalize states dynamically on read
+  const photos = (data as Photo[]).map(photo => ({
+    ...photo,
+    state: normalizeStateName(photo.state)
+  }))
+  
+  return photos
 }
 
 export const getImageDimensions = (source: File | string): Promise<{ width: number; height: number }> => {
@@ -95,7 +125,7 @@ export const uploadPhoto = async (metadata: Partial<Photo>, imageFile: File): Pr
     taken_at: metadata.taken_at || new Date().toISOString(),
     latitude: rawLat !== null && !isNaN(rawLat) ? rawLat : null,
     longitude: rawLng !== null && !isNaN(rawLng) ? rawLng : null,
-    state: metadata.state || null,
+    state: normalizeStateName(metadata.state),
     city: metadata.city || null,
     landmark: metadata.landmark || (metadata as any).location || null,
     description: metadata.description || '',
@@ -119,6 +149,10 @@ export const uploadPhoto = async (metadata: Partial<Photo>, imageFile: File): Pr
 }
 
 export const updatePhoto = async (id: string, updates: Partial<Photo>): Promise<Photo> => {
+  if (updates.state !== undefined) {
+    updates.state = normalizeStateName(updates.state)
+  }
+
   const { data, error } = await supabaseClient
     .from('photos')
     .update(updates)
@@ -127,7 +161,10 @@ export const updatePhoto = async (id: string, updates: Partial<Photo>): Promise<
 
   if (error) throw error
   if (!data || data.length === 0) throw new Error('Photo not found')
-  return data[0] as Photo
+  
+  const photo = data[0] as Photo
+  photo.state = normalizeStateName(photo.state)
+  return photo
 }
 
 

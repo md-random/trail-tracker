@@ -7,6 +7,7 @@ export const usePhotoStore = defineStore('photos', () => {
   // ─── State ───
   const photos = ref<Photo[]>([])
   const activeCategory = ref<CategoryId>('all')
+  const selectedState = ref<string>('all')
   const searchQuery = ref('')
   const selectedPhoto = ref<Photo | null>(null)
   const isEditing = ref(false)
@@ -27,6 +28,9 @@ export const usePhotoStore = defineStore('photos', () => {
       if (activeCategory.value !== 'all') {
         if (!photo.tags.includes(activeCategory.value)) return false
       }
+      if (selectedState.value !== 'all') {
+        if (photo.state !== selectedState.value) return false
+      }
       if (searchQuery.value) {
         const q = searchQuery.value.toLowerCase()
         return (
@@ -39,6 +43,13 @@ export const usePhotoStore = defineStore('photos', () => {
       }
       return true
     })
+  })
+
+  const uniqueStates = computed<string[]>(() => {
+    const states = photos.value
+      .map(p => p.state)
+      .filter((s): s is string => !!s)
+    return [...new Set(states)].sort()
   })
 
   // ─── Actions ───
@@ -143,9 +154,9 @@ export const usePhotoStore = defineStore('photos', () => {
   }
 
   return {
-    photos, activeCategory, searchQuery, selectedPhoto, isAdmin, isEditing,
+    photos, activeCategory, selectedState, searchQuery, selectedPhoto, isAdmin, isEditing,
     cacheBuster,
-    userSession, authError, filteredPhotos,
+    userSession, authError, filteredPhotos, uniqueStates,
     loadPhotos, savePhoto, removePhoto, selectPhoto, toggleAdmin,
     login, logout, initAuthListener, triggerCacheBuster
   }
